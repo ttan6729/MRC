@@ -140,7 +140,7 @@ void process_file(const char *file_name, int length,reads_t t, int n_threads)
 	t.seqs = seqs;
 	t.n = n_seq;
 	n_nreads = 0;
-	printf("read length:%d, seq number:%d,thread number:%d\n",length,n_seq,t.n_threads);
+//	printf("read length:%d, seq number:%d,thread number:%d\n",length,n_seq,t.n_threads);
 	pthread_t *tid = (pthread_t*)alloca(n_threads * sizeof(pthread_t));
 	for (i = 0; i < n_threads; ++i) 
 		t.w[i].t = &t, t.w[i].i = i; //
@@ -179,8 +179,6 @@ float **pre_process(vector<string> file_list,char *dir, int _k, int selected_num
 {
 	k = _k;
 	b = 2 * k;
-	printf("value of b is %d\n",b);
-	//init_file();
 	reads_t t;
 	pthread_t *tid;
 
@@ -228,33 +226,14 @@ float **pre_process(vector<string> file_list,char *dir, int _k, int selected_num
 	    } 
 	}
 	//normalization
-//	printf("m1\n"); print_data(m1,4,10);
-
-	printf("normalization\n");
 	for(int i = 0; i < file_list.size(); i++)
 	{
 		for(int j = 0; j < num_bucket; j++)
 			m2->data[i][j] = 1000.0*m1[i][j]/read_numbers[i];
 	}
 
-	double factor = 0.1;
-	//normalize based on each feature
-	// for(int j = 0; j < num_bucket; j++)
-	// {
-	// 	double min,max;
-	// 	m2->max_min(j,&min,&max);
-	// 	max += factor;
-	// 	for(int i = 0; i < file_list.size(); i++)
-	// 	{
-	// 		double temp = m2->data[i][j];
-	// 		m2->data[i][j] = (m2->data[i][j]+factor-min)/(max-min);
-	// 	}
-
-	// }
 
 
-//	printf("m2\n"); print_data(m2->data,4,10);
-//	printf("variance\n");
 	vector<double> vars;
 	for(int i = 0; i <num_bucket; i++)
 		vars.push_back(m2->col_var(i));
@@ -266,7 +245,6 @@ float **pre_process(vector<string> file_list,char *dir, int _k, int selected_num
 		result_data[i] = (float *)malloc(sizeof(float) *selected_number);
 
 	ofstream vector_fp;
-//	vector_fp.open("vectors.csv");
 
 	for(int i = 0; i < selected_number; i++)
 	{
@@ -275,55 +253,16 @@ float **pre_process(vector<string> file_list,char *dir, int _k, int selected_num
 		auto itr = find(vars.begin(),vars.end(),value);
 		int index = distance(vars.begin(),itr);
 		feature_ids.push_back(index);
-		printf("feature id:%d,vars %.2f,vars check %.2f\n",index,value,m2->col_var(index));
+	//	printf("feature id:%d,vars %.2f,vars check %.2f\n",index,value,m2->col_var(index));
 		for(int j = 0; j < file_list.size(); j++)
 		{
 			result_data[j][i] = m2->data[j][index];
 		}
 
-//		vector_fp << "," << index ;
 	}
 
-	// vector_fp << "\n";
-	// for(int i = 0; i < file_list.size(); i++)
-	// {
-	// 	vector_fp << i;
-	// 	for(int j = 0; j < selected_number; j++)
-	// 		vector_fp << "," << result_data[i][j];
-	// 	vector_fp << "\n";
-
-	// }
-	// vector_fp.close();
-
-	// ofstream result_fp;
-	// result_fp.open("csv/result.csv");
-    
- //    result_fp << "file";
-	// for(int i = 0; i < selected_number; i++)
- //    	result_fp << "," << i ;
- //    result_fp << "\n";
- //    for(int i = 0; i < file_list.size(); i++)
- //    {
- //    	result_fp << file_list[i];
- //    	for(int j = 0; j < selected_number; j++)
- //    		result_fp << "," << result_data[i][j];
- //    	result_fp << endl;
- //    }
-
-    printf("diemnsion: %d %d\n",file_list.size(),selected_number);
-
- //   result_fp.close();
-
 	free(mi_data);
-	// printf("free a\n");
-	// for(int i = 0; i < file_list.size(); i++)
-	// {
-	// 	printf("free %d\n",i);
-	// 	free(result_data1[i]);
-	// 	free(m1[i]);
-	// }
-	//free(m1);
-	//free(result_data1);
+
 	delete m2;
 	return result_data;
 }

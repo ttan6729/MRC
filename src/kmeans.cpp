@@ -22,24 +22,10 @@ cluster *create_cluster(cluster_result *cr,int id)
 
 void Kmeans::runKmeans()
 {
-	// for(int i = 0; i < n; i++)
-	// {
-	// 	for(int j = i+1; j < n; j++)
-	// 		printf("distance %d %d: %.4f\n",i,j,Distance(i,j));
-	// }
-	printf("size of file list:%d\n",file_list->size());
+	printf("number of files: %d\n", n);
 	char file_name[1024];
 	sprintf(file_name,"%s/cluster",dir);
 	fp.open(file_name);
-
-	printf("m:%d n:%d\n",m,n);
-	printf("check matrix\n");
-	for(int i = 0; i < 5; i++)
-	{
-		for(int j = 0; j < 10; j++)
-			printf("%.4f ",vectors[i][j]);
-		printf("\n");	
-	}
 
 	k = 2;
 	single_points = (cluster *)malloc(sizeof(cluster));
@@ -50,25 +36,20 @@ void Kmeans::runKmeans()
 	for(int i = 0; i < n; i++)
 		kv_push(int,*c,i);
 	split(c); //recursive split
-	printf("single points: ");
-	for(int i = 0; i < single_points->n; i++) 
-		printf("%d ",single_points->a[i]);
-	printf("\n");
+
 	cluster *c1 = (cluster *)malloc(sizeof(cluster));
 	kv_init(*c1);
 	kv_copy(int,*c1,*single_points);
 	kv_init(*single_points);
-	printf("single point size:%d, c1 size %d\n",single_points->n,c1->n);
 
-	printf("\n");	
 	for(int i = 0; i < c1->n; i++)
 		cout << c1->a[i] << " ";
-	printf("\n");
+
 	split(c1);
-	printf("single point size:%d\n",single_points->n);
+
 	for(int i = 0; i < single_points->n; i++)
 		fp << single_points->a[i] << "\n";
-	printf("clustered:% d\n,",clustered_number);
+	printf("finish clustering\n");
 	fp.close();
 }
 
@@ -91,9 +72,7 @@ void Kmeans::split(cluster *c)
 	}
 	else if (c->n == 1)
 	{
-		printf("single result:%d\n", c->a[0]);
 		kv_push(int,*single_points,c->a[0]);
-		//fp << c->a[0] << "\n";
 	}	
 	else if ( c->n ==2 || c->n == 3)
 	{
@@ -102,24 +81,17 @@ void Kmeans::split(cluster *c)
 		for(int i = 0; i < c->n-1; i++)
 		{
 			for(int j = i+1; j < c->n; j++)	
-			{
 				string s1 = strip((*file_list)[c->a[i]]),  s2 = strip((*file_list)[c->a[j]]);
-				printf("distance between %d %d, %s %s: %.2f\n",c->a[i],c->a[j],s1.c_str(),s2.c_str(),Distance(c->a[i],c->a[j]));
-			}
+			
 		}
 		
-		printf("result:");
 		for(int i = 0; i < c->n; i++)
-		{	
 			fp << c->a[i] << " ";
-			printf(" %d",c->a[i]);
-		}
 		fp << "\n";
-		printf("\n");
 	}
 	else if (c->n == 0)
 	{
-		printf("error in cluster size\n");
+	//	printf("error in cluster size\n");
 	//	exit(0);
 	}
 }
@@ -127,7 +99,6 @@ void Kmeans::split(cluster *c)
 
 cluster_result *Kmeans::Cluster(cluster *c)
 {
-	//printf("begin cluster\n");
 	int max_iter = 50;
 	vector<int> prev_centers, new_centers;
 
@@ -147,17 +118,11 @@ cluster_result *Kmeans::Cluster(cluster *c)
 		kv_init(*_c);
 		kv_push(cluster,*cs,*_c);
 	}
-	//printf("clustering, size %d, ",c->n);
-	// printf("cluster:");
-	// for(int i = 0; i < c->n; i++)
-	// 	printf(" %d",c->a[i]);
-	// printf("\n");
+
 	for( int iter = 0; iter < max_iter; iter++ )
 	{
-		//printf("centers %d %d\n",prev_centers[0],prev_centers[1]);
 		for(int i = 0; i < c->n; i++)
 			kv_push(int,cs->a[NearestCenter(c->a[i],prev_centers)],c->a[i]);
-		//printf("b1\n");
 		new_centers = compute_centers(cs);
 		if(new_centers == prev_centers)
 			break;
@@ -190,22 +155,12 @@ cluster_result *Kmeans::Cluster(cluster *c)
 		if (cs->a[i].n ==1)
 		{
 			cluster_result *_result = rebalance(cs);
-			printf("finish rebalance\n");
 			if(_result->n != 0)
 				result = _result;
 			break;
 		}
 	}
-	printf("return result, cluster size %d\n",result->n);
 
-	// for(int i = 0; i < cs->n; i++)
-	// {
-	// 	printf("result cluster: ");
-	// 	cluster c = cs->a[i];
-	// 	for(int j = 0; j < c.n; j++)
-	// 		printf(" %d",c.a[j]);
-	// 	printf("\n");
-	// }	
 	return result;
 }
 
@@ -222,9 +177,6 @@ cluster_result *Kmeans::rebalance(clusters *cs)
 		}
 	}
 
-	printf("rebalance id: %d %d\n",point_id,cluster_id);
-
-
 	vector<int> ids;
 	for(int i = 0; i < cs->a[cluster_id].n; i++)
 		ids.push_back(cs->a[cluster_id].a[i]);
@@ -236,9 +188,8 @@ cluster_result *Kmeans::rebalance(clusters *cs)
 	if (cs->a[cluster_id].n <=2)
 		return result;
 
-	if( min_dis <  2 * minDistance(min_id,ids) )
+	if( min_dis <  threshold * minDistance(min_id,ids) )
 	{
-		printf("add point, new result %d %d\n",min_id,point_id);
 		result->n = 2;
 		result->size = (int *)malloc(sizeof(int)*2);
 		result->ids = (int **)malloc(sizeof(int *) * 2);
@@ -267,10 +218,6 @@ vector<int> Kmeans::compute_centers(clusters *cs)
 	for(int i = 0; i < cs->n; i++)
 	{
 		cluster c = cs->a[i];
-		// printf("cluster %d:",i);
-		// for(int j = 0; j < c.n; j++)
-		//    printf(" %d",c.a[j]);
-		// printf("\n");
 
 		float minDistance = numeric_limits<float>::max();
 		int minId = -1;

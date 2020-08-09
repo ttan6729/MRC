@@ -25,12 +25,7 @@ void liftrlimit()  // for linux get and set resoruce limits
 }
 uint32_t num_locks = 0x1000000;
 
-
-int diff_threshold = 4; //15 for ERR174310_1 10 for ERR174310
-int maxthr; //
-int cbthreshold;
-int first_mininum = 6; // 4 6 10 20 100
-
+float threshold = 2.0;
 int n_threads = 12;
 int rw;
 int n = 0,selected_number = 50,m;
@@ -44,7 +39,6 @@ int main (int argc, char **argv)
 	int k = 8;
 	int c;
 	char *dir;
-	printf("begin para\n");
 	while ((c = getopt(argc, argv, "r:o:t:k:e:")) != -1)	
     switch (c)
     {
@@ -60,10 +54,13 @@ int main (int argc, char **argv)
       	case 'k':
         k = atoi(optarg);
         break;
+        case 's':
+        selected_number = atoi(optarg);
+        break;
       	case 'e':
+      	threshold = atof(optarg);
       	break;
     }	
-   	printf("end para\n");
 	float **vectors = process(dir,k);
 	kmeans_clustering(file_list,vectors,dir);
 	return 0;
@@ -71,11 +68,9 @@ int main (int argc, char **argv)
 
 float **process(char *dir,int k)
 {
-	printf("test for MRC\n");
-	printf("open file: %s\n",file_list_path);
+	printf("input file list path: %s\n",file_list_path);
 	fstream file;
-
-   	file.open(file_list_path,ios::in); 
+	file.open(file_list_path,ios::in); 
    	if (file.is_open())
    	{   //checking whether the file is open
       string line;
@@ -86,6 +81,11 @@ float **process(char *dir,int k)
       }
       file.close(); //close the file object.
     }
+    else
+    {
+    	printf("failed to open %s\n",file_list_path);
+    	exit(1);
+    }
 	float **vectors = pre_process(file_list,dir,k,selected_number);
 
 
@@ -95,42 +95,14 @@ float **process(char *dir,int k)
 void kmeans_clustering(vector<string> _file_list,float **vectors,char *dir)
 {
 	m = selected_number;
-    printf("n: %d  m: %d\n",n,m);
 	string value,line;
 	vector<string> *file_list = new vector<string>();
 
 	for(int i = 0; i < n; i++)
 		file_list->push_back(_file_list[i]);
-		//getline(myfile,line);
-	// for(int i = 0; i < n; i++)
-	// {
-	// 	getline(myfile,line,',');
-	// 	file_list->push_back(line);
-	// 	for(int j = 0; j < m-1; j++)
-	// 	{
-	// 		getline(myfile,value,',');
-	// 		//printf("%d %d,%s\n",i,j,value.c_str());
-	// 		vectors[i][j] = stof(value);
-	// 	}
-	// 	getline(myfile,value);
-	// 	ss.str(value);
-	// 	getline(ss,value,',');
-	// 	//printf("%d %d,%s\n",i,m-1,value.c_str());
-	// 	vectors[i][m-1] = stof(value);
-	// }
-	
-	// for(int i = 0; i < n; i++)
-	// {
-	//  	float sum = 0.0;
-	//  	for(int j = 0; j < m; j++)
- // 			sum += vectors[i][j];
-	//  	for(int j = 0; j < m; j++)
-	//  		vectors[i][j] = 100000*vectors[i][j]/sum;
-	// }
-	//myfile.close();
-	Kmeans *km = new Kmeans(vectors,n,m,dir);
+
+	Kmeans *km = new Kmeans(vectors,n,m,dir,threshold);
 	km->set_list(file_list);
-	printf("begin\n");
 	km->runKmeans();
 
 

@@ -21,13 +21,14 @@ private:
  	int n,m; //vector number, dimension of vector
 	int k;
 	float **vectors;
+	float threshold = 2.0;
 	cluster *single_points; 
 	clusters results;
 	std::vector<std::string> *file_list;
 	char *dir;
 public:
-	Kmeans(float **_vectors,int _n, int _m, char *_dir): 
-	vectors{_vectors}, n{_n}, m{_m}, dir{_dir} { }
+	Kmeans(float **_vectors,int _n, int _m, char *_dir, float _threshold): 
+	vectors{_vectors}, n{_n}, m{_m}, dir{_dir}, threshold(_threshold) { }
 	void split(cluster *c);
 	cluster_result *Cluster(cluster *c);
 	void runKmeans();

@@ -50,25 +50,38 @@ compress()
 	        do
 	                fp="${fp}${a}_"
 	        done
+  
+			rm -rf ${output}/buff.fastq
+        	for a in $line
+        	do
+            	cat ${listVar[a]} >> ${output}/buff.fastq
+        	done
+        	mv ${output}/buff.fastq ${output}/${fp}.fastq            	
 
-	        if ! test -f "${output}/${fp}.pgrc"; then
-	                rm -rf ${output}/buff.fastq
-	                for a in $line
-	                do
-	                        cat ${listVar[a]} >> ${output}/buff.fastq
-	                done
-	                mv ${output}/buff.fastq ${output}/${fp}.fastq
-	                if [[ $alg = "p" ]]; then
-	                	./PgRC -o -i ${output}/${fp}.fastq ${output}/${fp}.pgrc
-	                elif [[ $alg = "s" ]]; then
-	            		./spring -c -i ${output}/${fp}.fastq -r -o ${output}/${fp}.spring
-	                elif [[ $alg = "m" ]]; then
-	                	cd minicom 
-	                	./minicom -r ../${output}/${fp}.fastq -p
-	                	cd ../
-					fi
-					rm -rf ${output}/${fp}.fastq
-			fi
+            if [[ $alg = "p" ]]; then
+            	./PgRC -o -i ${output}/${fp}.fastq ${output}/${fp}.pgrc
+            elif [[ $alg = "m" ]]; then
+            	cd minicom 
+            	./minicom -r ../${output}/${fp}.fastq -p
+            	cd ../
+            elif [[ $alg = "s" ]]; then
+	       		./spring -c -i ${output}/${fp}.fastq -o ${output}/${fp}.spring
+            elif [[ $alg = "s2" ]]; then
+	       		./spring -c -i ${output}/${fp}.fastq --no-quality --no-ids -o ${output}/${fp}.spring	    
+            elif [[ $alg = "s3" ]]; then
+	       		./spring -c -i ${output}/${fp}.fastq --no-quality --no-ids -o ${output}/${fp}.spring	       		       		   	
+	       	elif [[ $alg = "f" ]]; then
+	       		echo ${fp}.fastq
+	       		_cwd="$PWD"
+		        cd FaStore
+		        sh ./fastore_compress.sh --lossless --in ../${output}/${fp}.fastq --out ../${output}/${fp} --threads 8
+				cd ../ 
+			elif [[ $alg = "Qu" ]]; then
+		        cd quartz
+		        sh runQ.sh ../${output}/${fp}.fastq ../${output}
+		        cd ../
+		    fi
+			rm -rf ${output}/${fp}.fastq
 	done < "${output}/cluster"
 	tar -cf ${filename%.*}${alg}.MRC ${output}
 	#rm -rf ${output}
@@ -81,7 +94,7 @@ decompress()
 	echo "dir is ${dir}"
 	rm -rf ${dir}
 	echo "decompress, file: ${filename}"
-	echo "--overwrite -xvkf ${filename}"
+	echo "overwrite -xvkf ${filename}"
 	tar --overwrite -xvkf  ${filename}
 	echo "finish tar"
 
@@ -124,14 +137,21 @@ decompress()
 				start=$(($end+1))
 			done
 
-
         elif [[ $alg = "m" ]]; then
         	cd minicom 
         	./minicom -r ../${dir}/${fp}.fastq -p
         	cd ../
-		fi
+        elif [[ $alg = "s" ]]; then
+        	fp="${fp}.spring"
+        	output=""
+        	for element in "${array[@]}"
+			do
+		    	output="${output} ${file_list[$element]}"
+			done
+        	./spring -d -i ${fp} -o ${output}
+		fi		
 	done < "${dir}/cluster"
-	rm -rf $dir
+	#rm -rf $dir
 
 	echo "finished, decompressed file write to ${output}"
 

@@ -1,0 +1,6 @@
+/projects/NGSData/RNACompression/MRC/tests/test1.fastq
+/projects/NGSData/RNACompression/MRC/tests/test2.fastq
+/projects/NGSData/RNACompression/MRC/tests/test3.fastq
+/projects/NGSData/RNACompression/MRC/tests/test4.fastq
+/projects/NGSData/RNACompression/MRC/tests/test5.fastq
+/projects/NGSData/RNACompression/MRC/tests/test6.fastq
