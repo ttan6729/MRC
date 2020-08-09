@@ -4,3 +4,9 @@
 [submodule "PgRC"]
 	path = PgRC
 	url = https://github.com/kowallus/PgRC.git
+[submodule "Spring"]
+	path = Spring
+	url = https://github.com/shubhamchandak94/Spring
+[submodule "FaStore"]
+	path = FaStore
+	url = https://github.com/refresh-bio/FaStore
