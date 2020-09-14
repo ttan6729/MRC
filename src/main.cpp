@@ -36,7 +36,7 @@ vector<string> file_list;
 
 int main (int argc, char **argv)
 {	
-	int k = 8;
+	int k = 15;
 	int c;
 	char *dir;
 	while ((c = getopt(argc, argv, "r:o:t:k:e:")) != -1)	
@@ -45,10 +45,10 @@ int main (int argc, char **argv)
       	case 'r':
         file_list_path = optarg;
         break;
-     	case 'o':	
-     	dir = optarg;
-     	break;
-     	case 't':
+       	case 'o':	
+       	dir = optarg;
+       	break;
+       	case 't':
         n_threads = atoi(optarg);
         break;
       	case 'k':

@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <omp.h>
 #include "kvec.h"
-
+#include <vector>
 
 typedef struct { int n, m; int *a; } cluster; //n:element number, m:maximize number, a:element,point id  
 typedef struct { int n, m; cluster *a; } clusters; //as output of kmeans

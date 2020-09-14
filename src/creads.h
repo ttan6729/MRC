@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <iostream>
+#include <vector>
 #include <fstream>
 #include <algorithm>
 #include <array>
@@ -69,9 +70,11 @@ public: // interface
     }
 };
 
-
+typedef struct { size_t n; uint64_t id;} bucket;
+typedef struct { size_t n,m; bucket *a;} buckets;
+typedef struct { size_t n,m; uint *a;} uint_v;
 //vector of reads I, n: element number, m: maximum number of elements
-typedef struct { size_t n, m; uint64_t *a; } uint64_v;  
+typedef struct { size_t n, m; uint64_t *a; } uint64_v; 
 typedef struct { size_t n, m; uint32_t *a; } uint32_v;
 typedef struct { size_t n, m; int32_t *a; } int32_v;
 typedef struct { size_t n, m; char *a; } char_v;
@@ -83,7 +86,6 @@ typedef struct { size_t n; uint8_t a; } uint8bit_v;
 #define getmin(a,b) ((a)<(b)?(a):(b))
 #define getmax3(a,b,c) getmax(getmax(a,b),c)
 #define getmax4(a,b,c,d) getmax(getmax3(a,b,c),d)
-
 extern int n_threads;
 extern int selected_num;
 // #ifdef __cplusplus
@@ -103,10 +105,12 @@ int cmp(const void *a, const void *b);
 // compute minimizers
 uint32_t sketch_suffix(const char *str,int len,int k);
 uint32_t sketch_prefix(const char *str,int len,int k);
-int mm_sketch_single(const char *str, int len,int k);
+uint64_t mm_sketch_single(const char *str, int len,int k);
 int mm_sketch_pos(const char *str, int len,int k);
 int mm_sketch_pos2(const char *str, int len,int k);
 std::array<int,2> mm_sketch_value_pos(const char *str, int len, int k);
+void add_minmizer(uint64_t id);
+void normalize(float **matrix, int row, int column);
 //void mm_sketch(const char *str, int len, int w, int k, uint32_t rid, mmI_v *p);
 
 // #ifdef __cplusplus

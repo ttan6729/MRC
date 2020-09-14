@@ -5,24 +5,23 @@ set -e
 usage()
 {
 cat << EOF
-MRC is a tool for compressing multiple FASTQ files.
+MRC is a clsutering-bsaed tool for selecting high-simialrity groups from multiple FASTQ datasets, then apply minicom/PgRC for compression.
 
 Usage: 
 Compression - compresses FASTQ datasets. Output written to '*.MRC' file
-./MRC.sh -a m -r test.txt (compress with minicom)
-./MRC.sh -a p -r test.txt (compress with PgRC)
-./MRC.sh -d file.MRC  
+./MRC.sh -a m -r list1.txt (compress with minicom, file contain name of to be compressed files)
+./MRC.sh -a p -r file.txt (compress with PgRc, file contain name of to be compressed files)
+./MRC.sh -d file.MRC
 Options:
+	-r      compression mode
 	-h 		print help message
-	-a      compression algortihm, p->PgRC1.2, m->minicom, s->SPRING, f->FaStore
-	-r      list of fastq files with same read length, each line contain one file
 	-t 		number of threads, default: 12
 	-k 		length of k-mer, k <= 10, default: 8
-	-e 		threshold percentage, default: 2.0
+	-e 		threshold percentage, default: 2
 Decompression - decompresses reads. Output written to 'dec' folder
-./minicom -d file.MRC
-	-d      compressed file .MRC (for decompression) 
- 	-t 		number of threads, default: 8
+./minicom -d file.minicom 
+	-d 		a compressed file .MRC [only for decompression]
+ 	-t 		number of threads, default: 24
 #See README and more supplementary information at:
 EOF
 # exit 0
@@ -31,6 +30,7 @@ EOF
 compress()
 {
 	output=${filename%.*}${alg}_MRC
+	echo "file:${filename} folder:${output}"
 	rm -rf $output ${filename%.*}${alg}.MRC
 	mkdir $output
 	echo ${alg} > ${output}/info
@@ -65,63 +65,38 @@ compress()
             	./minicom -r ../${output}/${fp}.fastq -p
             	cd ../
             elif [[ $alg = "s" ]]; then
-	       		./spring -c -i ${output}/${fp}.fastq -o ${output}/${fp}.spring	       		       		   	
+	       		./spring -c -i ${output}/${fp}.fastq -o ${output}/${fp}.spring
+            elif [[ $alg = "s2" ]]; then
+	       		./spring -c -i ${output}/${fp}.fastq --no-quality --no-ids -o ${output}/${fp}.spring	    
+            elif [[ $alg = "s3" ]]; then
+	       		./spring -c -i ${output}/${fp}.fastq --no-quality --no-ids -o ${output}/${fp}.spring	       		       		   	
 	       	elif [[ $alg = "f" ]]; then
 	       		echo ${fp}.fastq
 	       		_cwd="$PWD"
 		        cd FaStore
 		        sh ./fastore_compress.sh --lossless --in ../${output}/${fp}.fastq --out ../${output}/${fp} --threads 8
 				cd ../ 
+			elif [[ $alg = "Qu" ]]; then
+		        cd quartz
+		        sh runQ.sh ../${output}/${fp}.fastq ../${output}
+		        cd ../
 		    fi
 			rm -rf ${output}/${fp}.fastq
 	done < "${output}/cluster"
 	tar -cf ${filename%.*}${alg}.MRC ${output}
-	#rm ${filename%.*}${alg}.MRC
-	echo "compressed file write to: ${filename%.*}${alg}.MRC" 
-	rm -rf ${output}
-}
-
-check_exist()
-{
-   if [[ $alg = "p" ]]; then
-    	if [ ! -f "PgRC" ]; then
-			echo "Required tool PgRC does not exist"
-			exit
-		fi
-   elif [[ $alg = "m" ]]; then
-    	if [ ! -d "minicom" ]; then
-			echo "Required tool minicom does not exist"
-			exit
-		fi
-    elif [[ $alg = "s" ]]; then
-    	if [ ! -f "spring" ]; then
-			echo "Required tool spring does not exist"
-			exit
-		fi   		   	
-   	elif [[ $alg = "f" ]]; then
-   		if [ ! -d "FaStore" ]; then
-			echo "Required tool FaStore does not exist"
-			exit
-		fi
-	fi
+	#rm -rf ${output}
 }
 
 decompress()
 {	
-	echo "input file: ${filename}"
 	dir=${filename%.MRC*}_MRC
-	dir="${dir##*/}"
-	output=${filename%.MRC*}_decompress 
+	output=${filename%.MRC*}_decompress
 	echo "dir is ${dir}"
 	rm -rf ${dir}
 	echo "decompress, file: ${filename}"
-	#echo "overwrite -xvkf ${filename}"
-	tar --overwrite -xvkf  ${filename} -C ./
-
-    if [ ! -d "${dir}" ]; then
-		echo "Error, unzipped file not in current directory"
-		exit
-	fi
+	echo "overwrite -xvkf ${filename}"
+	tar --overwrite -xvkf  ${filename}
+	echo "finish tar"
 
 	rm -rf $output
 	mkdir $output
@@ -130,7 +105,6 @@ decompress()
 	length_list=( )
 
 	alg=$(head -n 1 ${dir}/info)
-	check_exist
 	echo "alg:${alg}"
 
 	{
@@ -150,10 +124,11 @@ decompress()
 		do
     		fp="${fp}${element}_"
 		done
-        start=1
-        end=0
+
         if [[ $alg = "p" ]]; then
         	./PgRC -d ${dir}/${fp}.pgrc
+        	start=1
+        	end=0
         	for element in "${array[@]}"
 			do
 				end=$(($end + ${length_list[$element]}))
@@ -161,45 +136,22 @@ decompress()
 				#sed -n \'\' ${dir}/${fp}.pgrc_out > ${output}/${file_list[$element]}
 				start=$(($end+1))
 			done
-			rm  ${dir}/${fp}.pgrc_out
+
         elif [[ $alg = "m" ]]; then
         	cd minicom 
-        	./minicom -d ../${dir}/${fp}_comp_order.minicom
-        	for element in "${array[@]}"
-			do
-				end=$(($end + ${length_list[$element]}))
-				sed -n -e "${start},${end} p" -e "${end} q" ${fp}_comp_order_dec.reads > ../${output}/${file_list[$element]}
-				#sed -n \'\' ${dir}/${fp}.pgrc_out > ${output}/${file_list[$element]}
-				start=$(($end+1))
-			done
-			rm ${fp}_comp_order_dec.reads
+        	./minicom -r ../${dir}/${fp}.fastq -p
         	cd ../
         elif [[ $alg = "s" ]]; then
-        	./spring -d -i ${dir}/${fp}.spring -o ${output}/${fp}.fastq
+        	fp="${fp}.spring"
+        	output=""
         	for element in "${array[@]}"
 			do
-				line_num=$((4 * length_list[$element]))
-				end=$(($end + ${line_num}))
-				sed -n -e "${start},${end} p" -e "${end} q" ${output}/${fp}.fastq > ${output}/${file_list[$element]}
-				#sed -n \'\' ${dir}/${fp}.pgrc_out > ${output}/${file_list[$element]}
-				start=$(($end+1))
+		    	output="${output} ${file_list[$element]}"
 			done
-			rm ${output}/${fp}.fastq 
-        elif [[ $alg = "f" ]]; then
-        	cd FaStore
-        	sh fastore_decompress.sh --in ../${dir}/${fp} --out ../${output}/${fp}.fastq
-        	for element in "${array[@]}"
-			do
-				end=$(($end + ${length_list[$element]}))
-				sed -n -e "${start},${end} p" -e "${end} q" ../${output}/${fp}.fastq > ../${output}/${file_list[$element]}
-				#sed -n \'\' ${dir}/${fp}.pgrc_out > ${output}/${file_list[$element]}
-				start=$(($end+1))
-			done
-			cd ../
-			rm ${output}/${fp}.fastq 
-		fi					
+        	./spring -d -i ${fp} -o ${output}
+		fi		
 	done < "${dir}/cluster"
-	#rm -rf ${filename}
+	#rm -rf $dir
 
 	echo "finished, decompressed file write to ${output}"
 
@@ -208,7 +160,7 @@ decompress()
 num_thr=12
 threshold_per=2
 m_dict=0
-k=8
+k=7
 alg="PgRc"
 filename=""
 #Check the number of arguments. If none are passed, print help and exit.
@@ -229,14 +181,13 @@ while getopts ":a:r:t:k:e" opt; do
 		r) filename=$OPTARG;;
 		t) num_thr=$OPTARG;;
 		k) k=$OPTARG;; #length of k
-		e) threshold_per=$OPTARG;; #different threshold
+		e) threshold=$OPTARG;; #different threshold
 		#\?) usage; echo -e "\033[31m Error parameters. \033[0m"; exit 0;;
 		#*) usage; echo -e "\033[31m Error parameters. \033[0m"; exit 0;;
 	esac
 done
 
 if [[ $mode == "c" ]]; then
-	check_exist
 	compress
 elif [[ $mode == "d" ]]; then
 	decompress

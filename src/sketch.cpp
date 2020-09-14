@@ -94,24 +94,25 @@ uint32_t sketch_suffix(const char *str,int len,int k)
 }
 
 
-int mm_sketch_single(const char *str, int len,int k)
+uint64_t mm_sketch_single(const char *str, int len,int k)
 {
-	uint64_t shift1 = 2 * (k - 1), mask = (1<<k) - 1, kmer= 0;//kmer[2] = {0,0};
-	int i, l, min=(1<<k) - 1;
+
+	uint64_t  mask = (1ULL<<2*k) - 1, min=(1ULL<<2*k) - 1, kmer= 0;//kmer[2] = {0,0};
+	int i, l, pos = k;
 	//assert(len > 0 && k > 0);
 	for (i = 0, l = 0; i < len; i++) 
 	{
 		int c = seq_nt4_table[(uint8_t)str[i]];
-		int z;
 		kmer = (kmer << 2 | c) & mask;           // forward k-mer
-		//kmer[1] = (kmer[1] >> 2) | (3ULL^c) << shift1; // reverse k-mer
-		
+		//kmer[1] = (kmer[1] >> 2) | (3ULL^c) << shift1; // reverse k-mer		
 		if (++l >= k && kmer < min) 
+		{
 			min = kmer;
+			pos = i;
+		}
 	}
-
+	//printf(", pos %d, value: %ld %s\n",pos, min, str+pos-k+1);
 	return min;
-
 }
 
 

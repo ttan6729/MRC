@@ -22,7 +22,7 @@ cluster *create_cluster(cluster_result *cr,int id)
 
 void Kmeans::runKmeans()
 {
-	printf("number of files: %d\n", n);
+	//printf("number of files: %d\n", file_list->size());
 	char file_name[1024];
 	sprintf(file_name,"%s/cluster",dir);
 	fp.open(file_name);
@@ -82,7 +82,6 @@ void Kmeans::split(cluster *c)
 		{
 			for(int j = i+1; j < c->n; j++)	
 				string s1 = strip((*file_list)[c->a[i]]),  s2 = strip((*file_list)[c->a[j]]);
-			
 		}
 		
 		for(int i = 0; i < c->n; i++)
