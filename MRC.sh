@@ -11,17 +11,14 @@ Usage:
 Compression - compresses FASTQ datasets. Output written to '*.MRC' file
 ./MRC.sh -a m -r list1.txt (compress with minicom, file contain name of to be compressed files)
 ./MRC.sh -a p -r file.txt (compress with PgRc, file contain name of to be compressed files)
-./MRC.sh -d file.MRC
+Decompression - decompresses FASTQ datasets. Output written to '*_MRC' folder
+./MRC.sh -d filep.MRC 
 Options:
 	-r      compression mode
 	-h 		print help message
 	-t 		number of threads, default: 12
 	-k 		length of k-mer, k <= 10, default: 8
 	-e 		threshold percentage, default: 2
-Decompression - decompresses reads. Output written to 'dec' folder
-./minicom -d file.minicom 
-	-d 		a compressed file .MRC [only for decompression]
- 	-t 		number of threads, default: 24
 #See README and more supplementary information at:
 EOF
 # exit 0
@@ -64,24 +61,8 @@ compress()
             	cd minicom 
             	./minicom -r ../${output}/${fp}.fastq -p
             	cd ../
-            elif [[ $alg = "s" ]]; then
-	       		./spring -c -i ${output}/${fp}.fastq -o ${output}/${fp}.spring
-            elif [[ $alg = "s2" ]]; then
-	       		./spring -c -i ${output}/${fp}.fastq --no-quality --no-ids -o ${output}/${fp}.spring	    
-            elif [[ $alg = "s3" ]]; then
-	       		./spring -c -i ${output}/${fp}.fastq --no-quality --no-ids -o ${output}/${fp}.spring	       		       		   	
-	       	elif [[ $alg = "f" ]]; then
-	       		echo ${fp}.fastq
-	       		_cwd="$PWD"
-		        cd FaStore
-		        sh ./fastore_compress.sh --lossless --in ../${output}/${fp}.fastq --out ../${output}/${fp} --threads 8
-				cd ../ 
-			elif [[ $alg = "Qu" ]]; then
-		        cd quartz
-		        sh runQ.sh ../${output}/${fp}.fastq ../${output}
-		        cd ../
-		    fi
-			rm -rf ${output}/${fp}.fastq
+	    fi
+	rm -rf ${output}/${fp}.fastq
 	done < "${output}/cluster"
 	tar -cf ${filename%.*}${alg}.MRC ${output}
 	#rm -rf ${output}
