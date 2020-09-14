@@ -160,7 +160,7 @@ decompress()
 num_thr=12
 threshold_per=2
 m_dict=0
-k=8
+k=7
 alg="PgRc"
 filename=""
 #Check the number of arguments. If none are passed, print help and exit.
